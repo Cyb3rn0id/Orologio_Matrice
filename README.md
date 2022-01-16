@@ -22,21 +22,21 @@ I seguenti link contengono un codice affiliazione Amazon solo per utenti Italian
 Unire insieme due display a matrice per formarne un'unico da 8 elementi. I display hanno un header maschio 5 pin sulla destra (DIN) e 5 pad liberi sulla sinistra (DOUT): attaccarne due in cascata come meglio ritenete opportuno collegando i 5 pin di uno con i 5 dell'altro aventi lo stesso nome (solo i pin DIN e DOUT hanno nome diverso e vanno comunque collegati insieme).
 Al NodeMCU andrà collegato solo l'header maschio rimasto libero.
 
-collegamento display -> NodeMCU
-CLK -> D5
-CS -> D8
-DIN -> D7
-GND -> GND
-VCC - > VU (o VV o VUSB)
+collegamento display -> NodeMCU  
+CLK -> D5  
+CS -> D8  
+DIN -> D7  
+GND -> GND  
+VCC - > VU (o VV o VUSB)  
 
-collegamento DHT22 -> NodeMCU
-Avendo il DHT22 frontale (ovvero con la griglia rivolta a voi), il pin 1 è quello sulla sinistra
-PIN 1 (VCC) -> 3V3
-PIN 2 (Data) -> D2
-PIN 3 (NC) : non connesso
-PIN 4 (GND) : GND
-
-Il NodeMCU andrà alimentato dalla porta USB.
+collegamento DHT22 -> NodeMCU  
+Avendo il DHT22 frontale (ovvero con la griglia rivolta a voi), il pin 1 è quello sulla sinistra  
+PIN 1 (VCC) -> 3V3  
+PIN 2 (Data) -> D2  
+PIN 3 (NC) : non connesso  
+PIN 4 (GND) : GND  
+  
+Il NodeMCU andrà alimentato dalla porta USB.  
 
 #### Setup
 Dovete modificare il file .ino mettendo nome e password della vostra rete WiFi in quanto l'orario viene prelevato da un server NTP. In caso di problemi (il programma non riesce ad aggiornare l'orario):
