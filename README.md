@@ -45,3 +45,6 @@ Dovete modificare il file .ino mettendo nome e password della vostra rete WiFi i
 
 #### Case
 Ho disegnato un case per alloggiare il display e il NodeMCU sul retro, lo renderò disponibile a breve ma è necessario avere il NodeMCU che ho messo nell'elenco in quanto le misure dei vari NodeMCU sul mercato sono diverse tra loro.
+
+#### Video
+[https://youtu.be/LpFm4PYXK0A](https://youtu.be/LpFm4PYXK0A)
