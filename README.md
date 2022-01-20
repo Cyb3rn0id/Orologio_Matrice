@@ -1,6 +1,9 @@
 ### Orologio Matrice
  
 Semplice orologio/calendario/condizioni meteo utilizzando un NodeMCU, 2 blocchi da 4 display a matrice 8x8 e un sensore umidità temperatura DHT22.
+
+[![Video Orologio matrice](https://img.youtube.com/vi/LpFm4PYXK0A/0.jpg)](https://www.youtube.com/watch?v=LpFm4PYXK0A)
+
 Librerie da installare in Arduino IDE:
 
 - EasyNTPClient by Harsha Alva
@@ -11,7 +14,7 @@ Librerie da installare in Arduino IDE:
 - Adafruit DHT library
 
 #### Componenti utilizzati
-I seguenti link contengono un codice affiliazione Amazon solo per utenti Italiani:
+I link sia ad Amazon che a Futura Elettronica contengono un codice di affiliazione:
 
 - Display matrice 8x32: [Amazon](https://amzn.to/3nwu8EC) (confezione da 3, ve ne avanzerà 1 ma si risparmia) / [Futura Elettronica](https://www.futurashop.it/componenti-sensori-breakoutboard-cavi-contenitori/optoelettronica/display/display-a-matrice/8300-YB302?tracking=5f004a6ba8be7)
 - NodeMCU ESP8266: [Amazon](https://amzn.to/3GF7Ecf) / [Futura Elettronica](https://www.futurashop.it/componenti-sensori-breakoutboard-cavi-contenitori/optoelettronica/display/display-a-matrice/8300-YB302?tracking=5f004a6ba8be7)
