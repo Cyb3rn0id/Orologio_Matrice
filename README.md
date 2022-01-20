@@ -2,7 +2,7 @@
  
 Semplice orologio/calendario/condizioni meteo utilizzando un NodeMCU, 2 blocchi da 4 display a matrice 8x8 e un sensore umidità temperatura DHT22.
 
-[![Video Orologio matrice](https://img.youtube.com/vi/LpFm4PYXK0A/0.jpg)](https://www.youtube.com/watch?v=LpFm4PYXK0A)
+[![Video Orologio matrice](orologio_matrice.jpg)](https://www.youtube.com/watch?v=LpFm4PYXK0A)
 
 Librerie da installare in Arduino IDE:
 
@@ -48,6 +48,3 @@ Dovete modificare il file .ino mettendo nome e password della vostra rete WiFi i
 
 #### Case
 Ho disegnato un case per alloggiare il display e il NodeMCU sul retro, lo renderò disponibile a breve ma è necessario avere il NodeMCU che ho messo nell'elenco in quanto le misure dei vari NodeMCU sul mercato sono diverse tra loro.
-
-#### Video
-[https://youtu.be/LpFm4PYXK0A](https://youtu.be/LpFm4PYXK0A)
