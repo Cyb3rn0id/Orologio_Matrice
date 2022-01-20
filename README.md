@@ -13,10 +13,10 @@ Librerie da installare in Arduino IDE:
 #### Componenti utilizzati
 I seguenti link contengono un codice affiliazione Amazon solo per utenti Italiani:
 
-- [Display matrice 8x32](https://amzn.to/3nwu8EC) (confezione da 3, ve ne avanzerà 1 ma si risparmia)
-- [NodeMCU ESP8266](https://amzn.to/3GF7Ecf)
-- [DHT22](https://amzn.to/3FtreqF)
-- [Cavetti Jumper](https://amzn.to/3rmOeSX)
+- Display matrice 8x32: [Amazon](https://amzn.to/3nwu8EC) (confezione da 3, ve ne avanzerà 1 ma si risparmia) / [Futura Elettronica](https://www.futurashop.it/componenti-sensori-breakoutboard-cavi-contenitori/optoelettronica/display/display-a-matrice/8300-YB302?tracking=5f004a6ba8be7)
+- NodeMCU ESP8266: [Amazon](https://amzn.to/3GF7Ecf) / [Futura Elettronica](https://www.futurashop.it/componenti-sensori-breakoutboard-cavi-contenitori/optoelettronica/display/display-a-matrice/8300-YB302?tracking=5f004a6ba8be7)
+- DHT22: [Amazon](https://amzn.to/3FtreqF) / [Futura Elettronica](https://www.futurashop.it/modulo-sensore-di-temperatura-umidita-dht22-8300-MODDHT22?tracking=5f004a6ba8be7)
+- Cavetti Jumper: [Amazon](https://amzn.to/3rmOeSX) / [Futura Elettronica](https://www.futurashop.it/confezione-50-jumper-femmina-femmina-vari-colori-7300-jumper50?tracking=5f004a6ba8be7)
 
 #### Collegamenti
 Unire insieme due display a matrice per formarne un'unico da 8 elementi. I display hanno un header maschio 5 pin sulla destra (DIN) e 5 pad liberi sulla sinistra (DOUT): attaccarne due in cascata come meglio ritenete opportuno collegando i 5 pin di uno con i 5 dell'altro aventi lo stesso nome (solo i pin DIN e DOUT hanno nome diverso e vanno comunque collegati insieme).
