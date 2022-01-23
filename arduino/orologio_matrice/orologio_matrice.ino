@@ -158,16 +158,17 @@ void loop(void)
     {
     switch (messagen)
       {
-      case 1: // Day of week
+      case 0: // Day of week
         messagen++;
         getDayOfWeek(szMesg);
         break;
         
-     case 2:  // calendar
+      case 1:  // calendar
         messagen++;
         getDate(szMesg);
         break;
-      case 3: // Temperature
+      
+      case 2: // Temperature
         dht.temperature().getEvent(&event);
         messagen++;
         dtostrf(event.temperature, 4, 1, szMesg);
