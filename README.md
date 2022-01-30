@@ -1,6 +1,6 @@
 ### Orologio Matrice aka (Yet Another) Dot Matrix Clock
  
-Semplice orologio/calendario/condizioni meteo utilizzando un NodeMCU, 2 blocchi da 4 display a matrice 8x8 e un sensore umidità temperatura DHT22.
+Semplice orologio/calendario/condizioni meteo utilizzando un NodeMCU, 2 blocchi da 4 display a matrice 8x8 e un sensore umidità temperatura DHT22. Ho pubblicato il [progetto completo su Hackster](https://www.hackster.io/CyB3rn0id/yet-another-dot-matrix-clock-ee98f3).
 
 [![Video Orologio matrice](orologio_matrice.jpg)](https://www.youtube.com/watch?v=LpFm4PYXK0A)
 
