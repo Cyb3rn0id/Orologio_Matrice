@@ -1,0 +1,8 @@
+Thumbs.db
+secret-my.h
+
+#VSCode
+.vscode
+
+#Arduino-CLI
+build

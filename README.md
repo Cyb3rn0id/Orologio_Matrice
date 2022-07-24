@@ -1,6 +1,8 @@
 ### Orologio Matrice aka (Yet Another) Dot Matrix Clock
  
-Semplice orologio/calendario/condizioni meteo utilizzando un NodeMCU, 2 blocchi da 4 display a matrice 8x8 e un sensore umidità temperatura DHT22. Ho pubblicato il [progetto completo su Hackster](https://www.hackster.io/CyB3rn0id/yet-another-dot-matrix-clock-ee98f3).
+Semplice orologio/calendario/condizioni meteo utilizzando un NodeMCU, 2 blocchi da 4 display a matrice 8x8 e un sensore umidità temperatura DHT22. Ho pubblicato il [progetto completo su Hackster](https://www.hackster.io/CyB3rn0id/yet-another-dot-matrix-clock-ee98f3). Su Hackster potete trovare anche l'enclosure da stampare in 3D.
+
+Update 24/07/2022 : L'orologio esegue il cambio automatico ora solare/ora legale (DST), una routine aggiorna l'orologio ogni ora o se all'avvio non c'è stato l'aggiornamento, e i dati di umidità e temperatura possono essere inviati, opzionalmente, ad un server MQTT.
 
 [![Video Orologio matrice](orologio_matrice.jpg)](https://www.youtube.com/watch?v=LpFm4PYXK0A)
 
@@ -12,6 +14,8 @@ Librerie da installare in Arduino IDE:
 - MD_MAX72xx by Majic Designs
 - Adafruit Unified Sensor Driver
 - Adafruit DHT library
+- (opzionale per MQTT) PubSubClient by Nick O' Leary
+
 
 #### Componenti utilizzati
 I link sia ad Amazon che a Futura Elettronica contengono un codice di affiliazione:
@@ -42,9 +46,7 @@ PIN 4 (GND) : GND
 Il NodeMCU andrà alimentato dalla porta USB.  
 
 #### Setup
-Dovete modificare il file .ino mettendo nome e password della vostra rete WiFi in quanto l'orario viene prelevato da un server NTP. In caso di problemi (il programma non riesce ad aggiornare l'orario):
+Dovete modificare il file secret.h mettendo nome e password della vostra rete WiFi in quanto l'orario viene prelevato da un server NTP. In caso di problemi (il programma non riesce ad aggiornare l'orario):
 - spegnete e riaccendete il router
 - se il riavvio del router non funziona, provate ad utilizzare un indirizzo IP statico (segui istruzioni nel codice)
-
-#### Case
-Ho disegnato un case per alloggiare il display e il NodeMCU sul retro, lo renderò disponibile a breve ma è necessario avere il NodeMCU che ho messo nell'elenco in quanto le misure dei vari NodeMCU sul mercato sono diverse tra loro.
+Modificate il file .ino commentando la riga #define MQTT se non intendete usare un server MQTT. Se invece intendete usarlo, modificate anche la riga `const char* mqtt_topic="garage";` mettendo un vostro topic. Supponendo di avere impostato il topic a `garage`, ritroverete il valore di umidità sul topic `garage/humidity` e il valore di temperatura su `garage/temperature`.
