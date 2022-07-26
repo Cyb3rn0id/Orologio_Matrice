@@ -18,8 +18,9 @@
  * https://www.hackster.io/CyB3rn0id/yet-another-dot-matrix-clock-ee98f3
  */
 
-#define DEBUG // for verbose output on serial. Used most for testing DST function
-#define MQTT  // comment if you don't want to use MQTT
+#define DEBUG // uncomment for verbose output on serial. Used most for testing DST function
+#define MQTT  // uncomment if you want to use MQTT
+//#define USE_STATIC_IP // uncomment if you want to use static IPs
 
 #include <ESP8266WiFi.h> // standard library
 #include <WiFiUdp.h> // standard library
@@ -32,64 +33,68 @@
 #include <DHT.h> // Adafruit DHT library (https://github.com/adafruit/DHT-sensor-library) - MIT
 #include <DHT_U.h> // As above
 #ifdef MQTT
-#include <PubSubClient.h> // by Nick O' Leary (https://github.com/knolleary/pubsubclient) - MIT
+ #include <PubSubClient.h> // by Nick O' Leary (https://github.com/knolleary/pubsubclient) - MIT
 #endif
 
 #include "myfont.h" // font I've modified from the standard one
 #include "secret.h" // user/passwords for wifi and mqtt
 
+// DHT22 settings
 #define DHTPIN D2 // Temperature/Humidity sensor connected on NodeMCU D2 
 #define DHTTYPE DHT22 // DHT22 aka AM2302
+
+// Matrix displays settings
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
-#define MAX_DEVICES 8
+#define MAX_DEVICES 8 // 8 matrix displays
 #define CLK_PIN   D5
 #define DATA_PIN  D7
 #define CS_PIN    D8
 
+// MD Parola settings
+#define SPEED_TIME 75
+#define PAUSE_TIME 0
+#define MAX_MESG 40
+
 // NTP server
 const char* ntpserver = "time.inrim.it";
 uint16_t timeoffset=3600; // time offset in seconds for standard solar time (ROME: UTC+1 = UTC+3600 seconds)
- 
-// uncomment if you want to use static IPs
-//#define USE_STATIC_IP
+
+// IP addresses for static ip
 #ifdef USE_STATIC_IP
-IPAddress ip(192,168,1,35); // ip address you want to assign to your board
-IPAddress gateway(192,168,1,1); // router address
-IPAddress subnet(255,255,255,0); // subnet mask
-IPAddress dns1(1,1,1,1); // Looks like DNS is required for EasyNTP client using a static IP
-IPAddress dns2(1,0,0,1);
+ IPAddress ip(192,168,1,35); // ip address you want to assign to your board
+ IPAddress gateway(192,168,1,1); // router address
+ IPAddress subnet(255,255,255,0); // subnet mask
+ IPAddress dns1(1,1,1,1); // Looks like DNS is required for EasyNTP client using a static IP
+ IPAddress dns2(1,0,0,1);
 #endif
 
 // MQTT settings
 #ifdef MQTT
-#define MQTT_RETRIES 5 // number of MQTT re-connection retries after a no-connection
-#define MQTT_SOCKET_TIMEOUT 2 // seconds for MQTT server response timeout
-#define MQTT_USE_PASSWORD // Comment this if your MQTT server does not require user/password
-IPAddress mqtt_server(192,168,1,101); // this is the address of your MQTT server
-const uint16_t mqtt_port=1883; // this is the port where your MQTT server is listening. 1883 is the standard value
-const char* mqtt_clientID = "YADM_Clock_by_Cyb3rn0id"; // unique name for this MQTT client
-const char* mqtt_topic="garage"; // name for MQTT topic (will be added /temperature and /humidity to this)
+ #define MQTT_USE_PASSWORD // Comment this if your MQTT server does not require user/password
+ #define MQTT_REFRESH 10 // update MQTT every 10 seconds
+ IPAddress mqtt_server(192,168,1,101); // this is the address of your MQTT server
+ const uint16_t mqtt_port=1883; // this is the port where your MQTT server is listening. 1883 is the standard value
+ const char* mqtt_clientID = "YADM_Clock_by_Cyb3rn0id"; // unique name for this MQTT client
+ const char* mqtt_topic="garage"; // name for MQTT topic (will be added /temperature and /humidity to this)
+ uint16_t mqtttime=MQTT_REFRESH; // update MQTT every 10 second
 #endif
-
-// clock settings
-#define SPEED_TIME 75
-#define PAUSE_TIME 0
-#define MAX_MESG 40
 
 MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 WiFiUDP ntpUDP;
 EasyNTPClient ntpClient(ntpUDP, ntpserver); 
 DHT_Unified dht(DHTPIN, DHTTYPE);
-WiFiClient MQTT_WiFi_Client;
 #ifdef MQTT
-PubSubClient MQTTClient(mqtt_server, mqtt_port, MQTT_WiFi_Client);
+ WiFiClient MQTT_WiFi_Client;
+ PubSubClient MQTTClient(mqtt_server, mqtt_port, MQTT_WiFi_Client);
 #endif
 
 // Global variables
 char szTime[9]; // array used for the time (mm:ss\0)
 char szMesg[MAX_MESG+1] = ""; // array used for other messages
 uint8_t degC[] = { 6, 3, 3, 56, 68, 68, 68 }; // Degree symbol for temperature in °C
-bool timeupdated=false;
+bool timeupdated=false; // keep track of time updating successful
+bool mqttconnection=true; // keep track of mqtt connection successful. true also if mqtt not used for clock stuff
+bool wifiok=false; // keep track of wifi status
 
 // month to string function
 char *mon2str(uint8_t mon, char *psz, uint8_t len)
@@ -152,9 +157,14 @@ void setup(void)
  P.setInvert(1, false);
  P.setIntensity(9);
 
- wifiConnect();
- timeupdated=timeupdate(timeoffset);
- if (timeupdated)
+ // connect to wifi
+ wifiok=wifiConnect();
+
+ // if wifi connected => update time and connect (eventually) to MQTT broker
+ if (wifiok)
+  {
+  timeupdated=timeupdate(timeoffset);
+  if (timeupdated)
     {
     // re-load time if we're in DST
     if (checkDST())
@@ -164,63 +174,80 @@ void setup(void)
       }
     }
 #ifdef MQTT
- mqtt_connect(MQTT_RETRIES);
+  mqttconnection=mqtt_connect();
 #endif
+  }
+else // No wifi, so time cannot update and MQTT connection cannot be done
+  {
+  timeupdated=false;
+#ifdef MQTT
+  mqttconnection=false;
+#endif
+  }
 
  // zone 0 (right): will use the "szMesg" array for showing scrolling messages
  P.displayZoneText(0, szMesg, PA_CENTER, SPEED_TIME, 0, PA_SCROLL_LEFT, PA_SCROLL_LEFT);
-  
  // zone 1 (left) : will use the "szTime" array for showing always the clock, no effects, no scrolling, static writings
  P.displayZoneText(1, szTime, PA_CENTER, SPEED_TIME, PAUSE_TIME, PA_PRINT, PA_NO_EFFECT); 
- 
- P.addChar('$', degC); // add degree symbol to the font definition in place of the '$' char
- getTime(szTime); // save actual time in szTime array for showing it quickly
+ // add degree symbol to the font definition in place of the '$' char
+ P.addChar('$', degC);
+ // save actual time in szTime array for showing it quickly
+ getTime(szTime); 
 }
 
 void loop(void)
  {
- static uint32_t lastTime = 0; // millis() memory
- static uint32_t lastTimeDHT = 0; // millis() memory
+ static uint32_t lastTime = 0; // millis() memory for time updating
+ static uint32_t lastTimeMQTT = 0; // millis() memory for MQTT updating
  static uint8_t  messagen = 0;  // message number to show in the most right part
  static bool flasher = false;  // flag used for flashing the hour separator
- static float temp;
- static float hum;
- static bool firststart=true;
- static int prevhour=hour();
+ static float temp; // DHT temperature
+ static float hum; // DHT humidity
+ static bool firststart=true; // update DHT values over MQTT first time
+ static int prevhour=hour(); // keep track of hour for DST/no DST stuff
  sensors_event_t event; // DHT22 event object
 
  P.displayAnimate(); // perform display effects
-
+ 
 #ifdef MQTT
- MQTTClient.loop(); // mantain active MQTT connection
- // retrieve both temperature and humidity at start
- // for updating mqtt at startup
- if (firststart)
+ if (mqttconnection) 
     {
-    delay(50);
-    dht.temperature().getEvent(&event);
-    temp=event.temperature;
-    delay(100);
-    dht.humidity().getEvent(&event);
-    hum=event.relative_humidity;
-    firststart=false;
+    mqttconnection=MQTTClient.loop(); // mantain active MQTT connection, returns connection status
+    if (firststart) // send DHT22 at first start
+      {
+      delay(50);
+      dht.temperature().getEvent(&event);
+      temp=event.temperature;
+      delay(100);
+      dht.humidity().getEvent(&event);
+      hum=event.relative_humidity;
+      firststart=false;
+      mqtttime=0; // refresh quick
+      }
     }
-#endif
+  else
+    {
+    mqtttime=60; // try to reconnect every minute  
+    }
+ // retrieve both temperature and humidity at start for updating mqtt at startup
+ 
+#endif // use MQTT
 
- // check for DST change/update time every hour
- if (hour()!=prevhour)
+ // check for DST change/update time every hour only if wifi working
+ if ((hour()!=prevhour) && (wifiok))
     {
     prevhour=hour();
     if (checkDST())
-     {
-     timeupdated=timeupdate(timeoffset+3600); // additional 1 hour for DST  
-     }
+      {
+      timeupdated=timeupdate(timeoffset+3600); // additional 1 hour for DST  
+      }
     else
-     {
-     timeupdated=timeupdate(timeoffset);  
-     }
+      {
+      timeupdated=timeupdate(timeoffset);  
+      }
     }
-    
+
+ // update clock - scrolling message
  if (P.getZoneStatus(0)) // zone 0 has completed the animation
     {
     switch (messagen)
@@ -229,87 +256,103 @@ void loop(void)
         messagen++;
         getDayOfWeek(szMesg);
         break;
-        
       case 1:  // calendar
         messagen++;
         getDate(szMesg);
         break;
-      
       case 2: // Temperature
+        messagen++;
         dht.temperature().getEvent(&event);
         temp=event.temperature;
-        messagen++;
         dtostrf(temp, 4, 1, szMesg);
-        strcat(szMesg, "$");
+        strcat(szMesg, "$"); // add grade symbol
         break;
-
-      default: // Relative Humidity
+      case 3: // Relative Humidity
+        // add further message if no wifi or no mqtt
+        messagen=((wifiok && mqttconnection)?0:(messagen+1));
         dht.humidity().getEvent(&event);
         hum=event.relative_humidity;
-        messagen=0;
         dtostrf(hum, 4, 1, szMesg);
         strcat(szMesg, "% RH");
         break;
-      }
+       case 4: // no wifi or no mqtt
+        messagen=0;
+        if (!wifiok) // if no wifi, it's logic that there isn't mqtt (and time updates)
+          {
+          strncpy_P(szMesg, "WiFi Failed!", 13);
+          }
+        else // no mqtt but there is wifi: restart your mqtt broker or router
+          { 
+          strncpy_P(szMesg, "MQTT Failed!", 13);
+          }
+        break;
+      } // switch
     P.displayReset(0); // reset zone 0
-    }
+    } // zone 0 completed animation
 
- // write time on display
+ // update clock - time (every second)
  if (millis() - lastTime >= 1000)
     {
     lastTime = millis();
     getTime(szTime, flasher);
     flasher = !flasher; // flashing time separator
     P.displayReset(1); // reset zone 1
-    // if time not updated, try every second
-    if (!timeupdated)
+    // if time not updated, try every second if wifi is connected
+    if (!timeupdated && wifiok)
        {
        timeupdated=timeupdate(timeoffset);
        }
-    }
+    } // update clock every second
 
+  // send new DHT22 values over MQTT or try to connect to MQTT Broker if no connecition
+  // check also wifi connection every this time so I can report on display if connection broke
 #ifdef MQTT
-  // send new DHT22 values over MQTT every 10 seconds
-  if (millis() - lastTimeDHT >= 10000)
+  if (millis() - lastTimeMQTT >= (mqtttime*1000))
      {
-     lastTimeDHT = millis();
-     // numbers must to be converted in array 
-	   char value[5]; // array used for numbers 
-     char fulltopic[50]; // array used for the full topic
-     dtostrf(temp,4,1,value); // decimal to array
-     strcpy(fulltopic, mqtt_topic);
-     strcat(fulltopic, "/temperature"); // append '/temperature' to topic
-    
-#ifdef DEBUG
-     if (MQTTClient.publish(fulltopic, value))
-      {
-	  Serial.print("Temperature published: ");
-      Serial.println(value);
-      }
-    else
-      {
-      Serial.println("Temperature NOT published");  
-      }
-#endif
-    
-	 dtostrf(hum,4,1,value);
-     strcpy(fulltopic, mqtt_topic);
-     strcat(fulltopic, "/humidity");
-
-#ifdef DEBUG     
-	 if (MQTTClient.publish(fulltopic, value))
-      {
-      Serial.print("Humidity published: ");
-      Serial.println(value);
-      }
+     if (WiFi.status() == WL_CONNECTED) wifiok=true;
+     lastTimeMQTT = millis();
+     if (!mqttconnection) // try to reconnect
+        {
+        if (wifiok) mqttconnection=mqtt_connect();
+        }
      else
-      {
-      Serial.println("Humidity NOT published");  
-      }
+        {
+        mqtttime=MQTT_REFRESH; // refresh every 10sec
+        // numbers must to be converted in arrays in order to be passed to mqtt_publish function
+	      char value[5]; // array used for numbers 
+        char fulltopic[50]; // array used for the full topic
+        dtostrf(temp,4,1,value); // decimal to array
+        strcpy(fulltopic, mqtt_topic);
+        strcat(fulltopic, "/temperature"); // append '/temperature' to topic
+#ifdef DEBUG
+        if (MQTTClient.publish(fulltopic, value))
+            {
+	          Serial.print("Temperature published: ");
+            Serial.println(value);
+            }
+        else
+            {
+            Serial.println("Temperature NOT published");  
+            }
 #endif
-    }
+	      dtostrf(hum,4,1,value);
+        strcpy(fulltopic, mqtt_topic);
+        strcat(fulltopic, "/humidity");
+#ifdef DEBUG     
+	      if (MQTTClient.publish(fulltopic, value))
+            {
+            Serial.print("Humidity published: ");
+            Serial.println(value);
+            }
+        else
+            {
+            Serial.println("Humidity NOT published");  
+            }
 #endif
- }
+      } // mqtt connection is ok
+   } // time passed for mqtt
+#endif // MQTT used
+ } // loop
 
 // connect to NTP server, set time offset, returns success or not
 bool timeupdate(int offset)
@@ -336,7 +379,7 @@ bool timeupdate(int offset)
   return (timeok);
   }
 
-void wifiConnect(void)
+bool wifiConnect(void)
   {
   uint8_t i=0;
   WiFi.mode(WIFI_STA);
@@ -347,23 +390,23 @@ void wifiConnect(void)
 #endif
   WiFi.hostname("Led_Matrix_Clock");
 #ifdef USE_STATIC_IP
-    WiFi.config(ip,gateway,subnet,dns1,dns2);
+  WiFi.config(ip,gateway,subnet,dns1,dns2);
 #endif
   WiFi.begin(ssid, password);
 
   // Connect to WiFi network
   while ((WiFi.status() != WL_CONNECTED) && (i<100))
     {
-    delay(500);
+    delay(300);
 #ifdef DEBUG
     Serial.print(".");
 #endif    
 	i++;
     }
-  
-#ifdef DEBUG    
+  // check and return wifi status 
   if (WiFi.status() == WL_CONNECTED)
     {
+#ifdef DEBUG  
 	  Serial.println("WiFi Connected.");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
@@ -373,22 +416,22 @@ void wifiConnect(void)
     Serial.println(WiFi.gatewayIP());
     Serial.print("MAC Address: ");
     Serial.println(WiFi.macAddress());
+#endif
+    return true;
    }
   else
     {
-    P.print("No WiFi");
+#ifdef DEBUG
+    Serial.println();
     Serial.println("Not connected");
-    }
 #endif
+    return false;
+    }
   }
 
 #ifdef MQTT
-bool mqtt_connect(uint8_t retries) 
+bool mqtt_connect(void) 
   {
-  uint8_t retr=0; //re-connection retries counter
-  MQTTClient.setSocketTimeout(MQTT_SOCKET_TIMEOUT);
-  while (retr<retries) 
-    {
 #ifdef DEBUG    
 	Serial.println("Trying to connect to MQTT Broker");  
 #endif    
@@ -400,26 +443,18 @@ bool mqtt_connect(uint8_t retries)
 #endif
         {
 #ifdef DEBUG        
-		Serial.println("MQTT connected");
+		    Serial.println("MQTT connected");
 #endif        
-		return (true);
-        break;
+		    return (true);
         } 
     else 
         {
 #ifdef DEBUG      
-	    Serial.print("MQTT failed, rc=");
+	      Serial.print("MQTT failed, rc=");
         Serial.println(MQTTClient.state());
-#endif        
-		retr++;
-        delay(100);
-        }
-      }
-#ifdef DEBUG    
-	Serial.println("Too many MQTT retries");
-    Serial.println("Please check MQTT settings");
-#endif
-    return (false);
+#endif   
+        return (false);     
+	      }
     }
 #endif
 
